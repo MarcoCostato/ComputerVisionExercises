@@ -80,8 +80,49 @@ int main(int argc, char** argv) {
     }
     imshow("Convex Hulls", convexHullImage);
 
+    // Compute the moments of the contours
+    Mat momentsImage = image.clone();
+    for (size_t i = 0; i < contours.size(); i++) {
+        Moments m = moments(contours[i]);
+        // compute the centroid of the contour
+        int cx = (int)(m.m10 / m.m00);
+        int cy = (int)(m.m01 / m.m00);
+        // Draw the centroid on the image
+        circle(momentsImage, Point(cx, cy), 5, Scalar(0, 255, 255), -1);
+    }
+    imshow("Moments", momentsImage);
 
 
-    waitKey(0);
+    // Read and extract the contours of a new image using edge detection
+    image = imread("/home/marco/Desktop/ComputerVisionExercises/contour_detection/sword.png");
+    imshow("Sword Image", image);
+    Mat grayImage, edges;
+    cvtColor(image, grayImage, COLOR_BGR2GRAY);
+    GaussianBlur(grayImage, grayImage, Size(5, 5), 0);
+    Canny(grayImage, edges, 50, 150);
+    // Close the edges using morphological closing
+    morphologyEx(edges, edges, MORPH_CLOSE, getStructuringElement(MORPH_RECT, Size(3, 3)));
+    imshow("Closed Edges", edges);
+    // Find contours
+    contours.clear();
+    findContours(edges, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+    // Draw contours on the original image
+    contourImage = image.clone();
+    for (size_t i = 0; i < contours.size(); i++) {
+        drawContours(contourImage, contours, (int)i, Scalar(0, 255, 0), 2);
+    }
+    //imshow("Sword Contours", contourImage);
+    // Compute the elliptical fitting of the contours
+    for (size_t i = 0; i < contours.size(); i++) {
+        if (contours[i].size() >= 5) { // fitEllipse requires at least 5 points
+            RotatedRect fittedEllipse = fitEllipse(contours[i]);
+            cout << "angle: " << fittedEllipse.angle << endl;
+            // Draw the ellipse on the image
+            ellipse(contourImage, fittedEllipse, Scalar(255, 0, 255), 2);
+        }
+    }
+    imshow("Fitted Ellipses", contourImage);
+
+    waitKey(10000);
     return 0;
 }
