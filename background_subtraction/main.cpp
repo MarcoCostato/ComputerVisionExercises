@@ -15,6 +15,7 @@ int extractFrameNumber(const std::string& filename){
 int main() {
     int kernelSize=5, varThreshold=24, sizeTreshold=100;
     // Read the video frames
+    // Dataset can be downloaded from http://www.svcl.ucsd.edu/projects/background_subtraction/ucsdbgsub_dataset.htm
     std::string videoPath = "/home/marco/Desktop/ComputerVisionExercises/background_subtraction/frames/JPEGS/peds";
     bool closeFlag = false;
     std::vector<cv::String> filenames;
