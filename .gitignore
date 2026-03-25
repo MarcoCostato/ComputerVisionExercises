@@ -19,3 +19,5 @@ Makefile
 #VSCode
 .vscode/
 
+#Background subtraction dataset
+background_subtraction/frames
