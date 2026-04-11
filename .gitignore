@@ -21,3 +21,6 @@ Makefile
 
 #Background subtraction dataset
 background_subtraction/frames
+
+#pycache
+__pycache__/
