@@ -42,7 +42,9 @@ class EditorView(tk.Toplevel):
         panel.pack(side=tk.RIGHT, fill="y", padx=10, pady=10)
 
         tk.Button(panel, text="Reset", command=self._reset_image).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Black & White", command=self._activate_black_and_white).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Gaussian Blur", command=self._activate_gaussian_blur).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Bilateral Filter", command=self._activate_bilateral_filter).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Sobel Edge Detection", command=self._activate_sobel).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Canny Edge Detection", command=self._activate_canny).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Pencil Sketch", command=self._activate_pencil_sketch).pack(fill="x", pady=(0,6))
@@ -56,6 +58,18 @@ class EditorView(tk.Toplevel):
 
 
     #--- Effect handlers ---
+
+
+    #--- Black & White Effect ---
+    def _activate_black_and_white(self):
+        """Activate black & white effect"""
+        self._clear_params()
+        self._apply_black_and_white()  
+
+    def _apply_black_and_white(self):
+        """Apply black & white effect to the image"""
+        self.bgr = cv2.cvtColor(self.original_bgr, cv2.COLOR_BGR2GRAY)  
+        self._refresh_image()
 
     #--- Gaussian Blur Effect ---
     def _activate_gaussian_blur(self):
@@ -94,6 +108,58 @@ class EditorView(tk.Toplevel):
     def _on_gaussian_blur_param_changed(self, _event = None):
         """Re-apply Gaussian blur effect when parameters change"""
         self._apply_gaussian_blur()
+
+    #--- Bilateral Filter Effect ---
+    def _activate_bilateral_filter(self):
+        """Activate bilateral filter effect and show parameters"""
+        self._clear_params()
+        tk.Label(self._params_frame, text="Diameter:").pack(anchor="w")
+        self._diameter_var = tk.IntVar(value=9)
+        diameter_slider = tk.Scale(
+            self._params_frame,
+            from_=1, to=99,
+            resolution=2,
+            orient="horizontal",
+            variable=self._diameter_var,
+            command=self._on_bilateral_filter_param_changed,
+        )
+        diameter_slider.pack(fill="x", pady=(0,6))
+
+        tk.Label(self._params_frame, text="Sigma Color:").pack(anchor="w")
+        self._sigma_color_var = tk.IntVar(value=75)
+        sigma_color_slider = tk.Scale(
+            self._params_frame,
+            from_=1, to=255,
+            orient="horizontal",
+            variable=self._sigma_color_var,
+            command=self._on_bilateral_filter_param_changed,
+        )
+        sigma_color_slider.pack(fill="x", pady=(0,6))
+
+        tk.Label(self._params_frame, text="Sigma Space:").pack(anchor="w")
+        self._sigma_space_var = tk.IntVar(value=75)
+        sigma_space_slider = tk.Scale(
+            self._params_frame,
+            from_=1, to=255,
+            orient="horizontal",
+            variable=self._sigma_space_var,
+            command=self._on_bilateral_filter_param_changed,
+        )
+        sigma_space_slider.pack(fill="x", pady=(0,6))
+
+        self._apply_bilateral_filter()  
+
+    def _apply_bilateral_filter(self):
+        """Apply bilateral filter effect to the image"""
+        diameter = self._diameter_var.get()
+        sigma_color = self._sigma_color_var.get()
+        sigma_space = self._sigma_space_var.get()
+        self.bgr = cv2.bilateralFilter(self.original_bgr, diameter, sigma_color, sigma_space)
+        self._refresh_image()
+
+    def _on_bilateral_filter_param_changed(self, _event = None):
+        """Re-apply bilateral filter effect when parameters change"""
+        self._apply_bilateral_filter()
 
     #--- Sobel Edge Detection Effect ---
     def _activate_sobel(self):
