@@ -63,7 +63,8 @@ class EditorView(tk.Toplevel):
         self._clear_params()
         tk.Label(self._params_frame, text="Kernel Size:").pack(anchor="w")
         self._kernel_var = tk.IntVar(value=5)
-        slider = tk.Scale(
+        self._sigma_var = tk.IntVar(value=0)
+        kSizeSlider = tk.Scale(
             self._params_frame,
             from_=1, to=99,
             resolution=2,
@@ -71,13 +72,23 @@ class EditorView(tk.Toplevel):
             variable=self._kernel_var,
             command=self._on_gaussian_blur_param_changed,
         )
-        slider.pack(fill="x", pady=(0,6))
+        sigmaSlider = tk.Scale(
+            self._params_frame,
+            from_=0, to=100,
+            orient="horizontal",
+            variable=self._sigma_var,
+            command=self._on_gaussian_blur_param_changed,
+        )
+
+        kSizeSlider.pack(fill="x", pady=(0,6))
+        sigmaSlider.pack(fill="x", pady=(0,6))
         self._apply_gaussian_blur()  # Apply effect immediately
     
     def _apply_gaussian_blur(self):
         """Apply Gaussian blur effect to the image"""
         kernel = self._kernel_var.get()
-        self.bgr = cv2.GaussianBlur(self.original_bgr, (kernel, kernel), 0)  # Use the original image
+        sigma = self._sigma_var.get()
+        self.bgr = cv2.GaussianBlur(self.original_bgr, (kernel, kernel), sigma)  # Use the original image
         self._refresh_image()
 
     def _on_gaussian_blur_param_changed(self, _event = None):
