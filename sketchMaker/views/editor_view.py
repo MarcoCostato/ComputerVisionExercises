@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 import numpy as np
 from sketch_scripts.pencilSketch import pencil_sketch
 from sketch_scripts.basic_processing import sobel_edge_detection, canny_edge_detection
+from sketch_scripts.sepia import sepia_filter
 
 class EditorView(tk.Toplevel):
     def __init__(self, parent, path, on_close):
@@ -43,6 +44,7 @@ class EditorView(tk.Toplevel):
 
         tk.Button(panel, text="Reset", command=self._reset_image).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Black & White", command=self._activate_black_and_white).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Sepia", command=self._activate_sepia).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Gaussian Blur", command=self._activate_gaussian_blur).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Bilateral Filter", command=self._activate_bilateral_filter).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Sobel Edge Detection", command=self._activate_sobel).pack(fill="x", pady=(0,6))
@@ -71,6 +73,17 @@ class EditorView(tk.Toplevel):
         self.bgr = cv2.cvtColor(self.original_bgr, cv2.COLOR_BGR2GRAY)  
         self._refresh_image()
 
+    #--- Sepia Effect ---
+    def _activate_sepia(self):
+        """Activate sepia effect"""
+        self._clear_params()
+        self._apply_sepia()
+
+    def _apply_sepia(self):
+        """Apply sepia effect to the image"""
+        self.bgr = sepia_filter(self.original_bgr)
+        self._refresh_image()
+
     #--- Gaussian Blur Effect ---
     def _activate_gaussian_blur(self):
         """Activate Gaussian blur effect and show parameters"""
@@ -86,6 +99,8 @@ class EditorView(tk.Toplevel):
             variable=self._kernel_var,
             command=self._on_gaussian_blur_param_changed,
         )
+        kSizeSlider.pack(fill="x", pady=(0,6))
+        tk.Label(self._params_frame, text="Sigma:").pack(anchor="w")
         sigmaSlider = tk.Scale(
             self._params_frame,
             from_=0, to=100,
@@ -93,8 +108,6 @@ class EditorView(tk.Toplevel):
             variable=self._sigma_var,
             command=self._on_gaussian_blur_param_changed,
         )
-
-        kSizeSlider.pack(fill="x", pady=(0,6))
         sigmaSlider.pack(fill="x", pady=(0,6))
         self._apply_gaussian_blur()  # Apply effect immediately
     
