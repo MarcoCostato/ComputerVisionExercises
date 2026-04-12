@@ -1,0 +1,4 @@
+numpy @ file:///home/task_177520930381230/croot/numpy_and_numpy_base_1775209333810/work/dist/numpy-2.4.4-cp314-cp314-linux_x86_64.whl#sha256=a5464838e6fabaa5a0f7b863484e5491bf118c31da2cf7a03808656a938013ca
+opencv-python==4.13.0
+opencv-python-headless==4.13.0
+pillow @ file:///home/task_177247536674454/croot/pillow_1772475407876/work
