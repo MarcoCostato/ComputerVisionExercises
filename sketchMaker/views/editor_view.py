@@ -12,6 +12,7 @@ class EditorView(tk.Toplevel):
         self.on_close = on_close
         self.title(f"Editor - {path}")
 
+        self._debaunce_job = None # To store the after job for debouncing parameter changes
 
         self.bgr = self._load_image(path)
         self.original_bgr = self.bgr.copy()  # Keep a copy of the original image
@@ -43,12 +44,12 @@ class EditorView(tk.Toplevel):
         panel.pack(side=tk.RIGHT, fill="y", padx=10, pady=10)
 
         tk.Button(panel, text="Reset", command=self._reset_image).pack(fill="x", pady=(0,6))
-        tk.Button(panel, text="Black & White", command=self._activate_black_and_white).pack(fill="x", pady=(0,6))
-        tk.Button(panel, text="Sepia", command=self._activate_sepia).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Gaussian Blur", command=self._activate_gaussian_blur).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Bilateral Filter", command=self._activate_bilateral_filter).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Sobel Edge Detection", command=self._activate_sobel).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Canny Edge Detection", command=self._activate_canny).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Black & White", command=self._activate_black_and_white).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Sepia", command=self._activate_sepia).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Pencil Sketch", command=self._activate_pencil_sketch).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Color Pencil Sketch", command=self._activate_color_pencil_sketch).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Compose", command=self._compose_image).pack(fill="x", pady=(0,6))
@@ -172,8 +173,10 @@ class EditorView(tk.Toplevel):
         self._refresh_image()
 
     def _on_bilateral_filter_param_changed(self, _event = None):
-        """Re-apply bilateral filter effect when parameters change"""
-        self._apply_bilateral_filter()
+        """Re-apply bilateral filter effect when parameters change WITH DEBOUNCE"""
+        if self._debaunce_job:
+            self._params_frame.after_cancel(self._debaunce_job)
+        self._debaunce_job = self._params_frame.after(300, self._apply_bilateral_filter)
 
     #--- Sobel Edge Detection Effect ---
     def _activate_sobel(self):
