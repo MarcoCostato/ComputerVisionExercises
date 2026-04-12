@@ -1,9 +1,10 @@
 import tkinter as tk
+from tkinter import filedialog
 import cv2 
 from PIL import Image, ImageTk
 import numpy as np
 from sketch_scripts.pencilSketch import pencil_sketch, color_pencil_sketch
-from sketch_scripts.basic_processing import sobel_edge_detection, canny_edge_detection
+from sketch_scripts.basic_processing import sobel_edge_detection, canny_edge_detection, dynamic_gamma_correction
 from sketch_scripts.sepia import sepia_filter
 
 class EditorView(tk.Toplevel):
@@ -44,6 +45,9 @@ class EditorView(tk.Toplevel):
         panel.pack(side=tk.RIGHT, fill="y", padx=10, pady=10)
 
         tk.Button(panel, text="Reset", command=self._reset_image).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Brightness/Contrast", command=self._activate_brightness_contrast).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Gamma Correction", command=self._activate_gamma_correction).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Dynamic Gamma Correction", command=self._activate_dynamic_gamma_correction).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Gaussian Blur", command=self._activate_gaussian_blur).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Bilateral Filter", command=self._activate_bilateral_filter).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Sobel Edge Detection", command=self._activate_sobel).pack(fill="x", pady=(0,6))
@@ -53,6 +57,7 @@ class EditorView(tk.Toplevel):
         tk.Button(panel, text="Pencil Sketch", command=self._activate_pencil_sketch).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Color Pencil Sketch", command=self._activate_color_pencil_sketch).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Compose", command=self._compose_image).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Save as PNG", command=self._save_png).pack(fill="x", pady=(0,6))
 
         self._params_frame = tk.Frame(panel)
         self._params_frame.pack(fill="x", pady=(0,6))
@@ -64,27 +69,112 @@ class EditorView(tk.Toplevel):
     #--- Effect handlers ---
 
 
-    #--- Black & White Effect ---
-    def _activate_black_and_white(self):
-        """Activate black & white effect"""
+    #--- Brightness/Contrast Effect ---
+    def _activate_brightness_contrast(self):
+        """Activate brightness/contrast effect and show parameters"""
         self._clear_params()
-        self._apply_black_and_white()  
+        tk.Label(self._params_frame, text="Brightness:").pack(anchor="w")
+        self._brightness_var = tk.IntVar(value=0)
+        brightness_slider = tk.Scale(
+            self._params_frame,
+            from_=-100, to=100,
+            orient="horizontal",
+            variable=self._brightness_var,
+            command=self._on_brightness_contrast_param_changed,
+        )
+        brightness_slider.pack(fill="x", pady=(0,6))
 
-    def _apply_black_and_white(self):
-        """Apply black & white effect to the image"""
-        self.bgr = cv2.cvtColor(self.original_bgr, cv2.COLOR_BGR2GRAY)  
+        tk.Label(self._params_frame, text="Contrast:").pack(anchor="w")
+        self._contrast_var = tk.IntVar(value=0)
+        contrast_slider = tk.Scale(
+            self._params_frame,
+            from_=-100, to=100,
+            orient="horizontal",
+            variable=self._contrast_var,
+            command=self._on_brightness_contrast_param_changed,
+        )
+        contrast_slider.pack(fill="x", pady=(0,6))
+
+        self._apply_brightness_contrast()  # Apply effect immediately
+
+    def _apply_brightness_contrast(self):
+        """Apply brightness/contrast effect to the image"""
+        brightness = self._brightness_var.get()
+        contrast = self._contrast_var.get()
+
+        # Apply contrast
+        factor = (259 * (contrast + 255)) / (255 * (259 - contrast)) if contrast != 0 else 1
+        adjusted = cv2.convertScaleAbs(self.original_bgr, alpha=factor, beta=brightness)
+
+        self.bgr = adjusted
         self._refresh_image()
 
-    #--- Sepia Effect ---
-    def _activate_sepia(self):
-        """Activate sepia effect"""
-        self._clear_params()
-        self._apply_sepia()
+    def _on_brightness_contrast_param_changed(self, _event = None):
+        """Re-apply brightness/contrast effect when parameters change"""
+        self._apply_brightness_contrast()
 
-    def _apply_sepia(self):
-        """Apply sepia effect to the image"""
-        self.bgr = sepia_filter(self.original_bgr)
+
+    #--- Gamma Correction Effect ---
+    def _activate_gamma_correction(self):
+        """Activate gamma correction effect and show parameters"""
+        self._clear_params()
+        tk.Label(self._params_frame, text="Gamma:").pack(anchor="w")
+        self._gamma_var = tk.DoubleVar(value=1.0)
+        gamma_slider = tk.Scale(
+            self._params_frame,
+            from_=0.1, to=5.0,
+            resolution=0.1,
+            orient="horizontal",
+            variable=self._gamma_var,
+            command=self._on_gamma_correction_param_changed,
+        )
+        gamma_slider.pack(fill="x", pady=(0,6))
+        self._apply_gamma_correction()  # Apply effect immediately
+
+    def _apply_gamma_correction(self):
+        """Apply gamma correction effect to the image"""
+        gamma = self._gamma_var.get()
+        invGamma = 1.0 / gamma
+        table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(256)]).astype("uint8")
+        self.bgr = cv2.LUT(self.original_bgr, table)
         self._refresh_image()
+
+    def _on_gamma_correction_param_changed(self, _event = None):
+        """Re-apply gamma correction effect when parameters change"""
+        self._apply_gamma_correction()
+
+    #--- Dynamic Gamma Correction Effect ---
+    def _activate_dynamic_gamma_correction(self):
+        """Activate dynamic gamma correction effect"""
+        self._clear_params()
+        tk.Label(self._params_frame, text="Blur Kernel Size:").pack(anchor="w")
+        self._blur_ksize_var = tk.IntVar(value=21)
+        blur_ksize_slider = tk.Scale(
+            self._params_frame,
+            from_=1, to=99,
+            resolution=2,
+            orient="horizontal",
+            variable=self._blur_ksize_var,
+            command=self._on_dynamic_gamma_correction_param_changed,
+        )
+        blur_ksize_slider.pack(fill="x", pady=(0,6))
+
+        self._apply_dynamic_gamma_correction()  # Apply effect immediately
+
+    def _apply_dynamic_gamma_correction(self):
+        """Apply dynamic gamma correction effect to the image"""
+        self.bgr = dynamic_gamma_correction(self.original_bgr, blur_ksize=self._blur_ksize_var.get())
+        self._refresh_image()
+
+    def _on_dynamic_gamma_correction_param_changed(self, _event = None):
+        """Re-apply dynamic gamma correction effect when parameters change WITH DEBOUNCE"""
+        if self._debaunce_job:
+            self._params_frame.after_cancel(self._debaunce_job)
+        self._debaunce_job = self._params_frame.after(50, self._apply_dynamic_gamma_correction)
+
+
+
+    
 
     #--- Gaussian Blur Effect ---
     def _activate_gaussian_blur(self):
@@ -259,6 +349,28 @@ class EditorView(tk.Toplevel):
         """Re-apply Canny edge detection effect when parameters change"""
         self._apply_canny()
 
+    #--- Black & White Effect ---
+    def _activate_black_and_white(self):
+        """Activate black & white effect"""
+        self._clear_params()
+        self._apply_black_and_white()  
+
+    def _apply_black_and_white(self):
+        """Apply black & white effect to the image"""
+        self.bgr = cv2.cvtColor(self.original_bgr, cv2.COLOR_BGR2GRAY)  
+        self._refresh_image()
+
+    #--- Sepia Effect ---
+    def _activate_sepia(self):
+        """Activate sepia effect"""
+        self._clear_params()
+        self._apply_sepia()
+
+    def _apply_sepia(self):
+        """Apply sepia effect to the image"""
+        self.bgr = sepia_filter(self.original_bgr)
+        self._refresh_image()
+
     #--- Pencil Sketch Effect ---
     def _activate_pencil_sketch(self):
         """Activate pencil sketch effect and show parameters"""
@@ -342,6 +454,16 @@ class EditorView(tk.Toplevel):
             self.bgr = cv2.cvtColor(self.bgr, cv2.COLOR_GRAY2BGR)
         self.original_bgr = self.bgr.copy()  
         self._reset_image()  # Refresh the display with the new original image
+
+    def _save_png(self):
+        """Save the current image as a PNG file"""
+        path = filedialog.asksaveasfilename(
+            title="Save image as",
+            defaultextension=".png",
+            filetypes=[("PNG files", "*.png"), ("All files", "*.*")]
+        )
+        if path:
+            cv2.imwrite(path, self.bgr)
     def close(self):
         """Handle closing the editor"""
         self.destroy()

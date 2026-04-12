@@ -28,3 +28,19 @@ def canny_edge_detection(bgrImage, blur_ksize=5, low_threshold=50, high_threshol
     blurred = cv2.GaussianBlur(gray, (blur_ksize, blur_ksize), 0)
     edges = cv2.Canny(blurred, low_threshold, high_threshold)
     return cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+
+def dynamic_gamma_correction(bgrImage, blur_ksize=21):
+    """Apply adaptive gamma correction to a BGR image
+    Based on: Monray, Nathan. 'Local color correction using non-linear masking.' Color and Imaging Conference. Vol. 8. 
+    Sciety of Imaging Science and Technology, 2000."""
+    # Compute the luminosity mask by converting the image to grayscale, inverting it, and applying a Gaussian blur
+    gray = cv2.cvtColor(bgrImage, cv2.COLOR_BGR2GRAY)
+    inverted_gray = 255 - gray
+    blurred_inverted = cv2.GaussianBlur(inverted_gray, (blur_ksize, blur_ksize), 0)
+    # The mask highlights darker areas of the image, which will receive a stronger gamma correction
+    # Gamma correction is applied pixel by pixel
+    gamma_corrected = np.zeros_like(bgrImage, dtype=np.float32)
+    for c in range(3):  # For each color channel
+        gamma_corrected[:,:,c] = 255.0 * np.power(bgrImage[:,:,c] / 255.0, np.power(2, (128.0 - blurred_inverted) / 128.0))
+
+    return np.uint8(np.clip(gamma_corrected, 0, 255))
