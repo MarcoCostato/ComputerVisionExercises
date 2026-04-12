@@ -2,7 +2,7 @@ import tkinter as tk
 import cv2 
 from PIL import Image, ImageTk
 import numpy as np
-from sketch_scripts.pencilSketch import pencil_sketch
+from sketch_scripts.pencilSketch import pencil_sketch, color_pencil_sketch
 from sketch_scripts.basic_processing import sobel_edge_detection, canny_edge_detection
 from sketch_scripts.sepia import sepia_filter
 
@@ -50,6 +50,7 @@ class EditorView(tk.Toplevel):
         tk.Button(panel, text="Sobel Edge Detection", command=self._activate_sobel).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Canny Edge Detection", command=self._activate_canny).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Pencil Sketch", command=self._activate_pencil_sketch).pack(fill="x", pady=(0,6))
+        tk.Button(panel, text="Color Pencil Sketch", command=self._activate_color_pencil_sketch).pack(fill="x", pady=(0,6))
         tk.Button(panel, text="Compose", command=self._compose_image).pack(fill="x", pady=(0,6))
 
         self._params_frame = tk.Frame(panel)
@@ -281,6 +282,33 @@ class EditorView(tk.Toplevel):
     def _on_pencil_sketch_param_changed(self, _event = None):
         """Re-apply pencil sketch effect when parameters change"""
         self._apply_pencil_sketch()
+
+    #--- Color Pencil Sketch Effect ---
+    def _activate_color_pencil_sketch(self):
+        """Activate color pencil sketch effect and show parameters"""
+        self._clear_params()
+        tk.Label(self._params_frame, text="Blur Kernel Size:").pack(anchor="w")
+        self._kernel_var = tk.IntVar(value=21)
+        slider = tk.Scale(
+            self._params_frame,
+            from_=1, to=99,
+            resolution=2,
+            orient="horizontal",
+            variable=self._kernel_var,
+            command=self._on_color_pencil_sketch_param_changed,
+        )
+        slider.pack(fill="x", pady=(0,6))
+        self._apply_color_pencil_sketch()  
+
+    def _apply_color_pencil_sketch(self):
+        """Apply color pencil sketch effect to the image"""
+        kernel = self._kernel_var.get()
+        self.bgr = color_pencil_sketch(self.original_bgr, blur_ksize=kernel)  
+        self._refresh_image()
+
+    def _on_color_pencil_sketch_param_changed(self, _event = None):
+        """Re-apply color pencil sketch effect when parameters change"""
+        self._apply_color_pencil_sketch()
 
 
 
