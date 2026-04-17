@@ -1,0 +1,11 @@
+name: YOLODockerExercise
+channels:
+  - defaults
+dependencies:
+  - fastapi
+  - ultralytics
+  - ipykernel
+  - pytorch
+  - torchvision
+  - pydantic-settings
+prefix: /home/marco/miniconda3/envs/YOLODockerExercise
